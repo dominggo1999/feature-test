@@ -3,8 +3,12 @@ import Moveable from 'react-moveable';
 import tw, { styled } from 'twin.macro';
 
 const Canvas = styled.div`
-  width: 1080px;
-  height: 1920px;
+  ${tw`
+    mx-auto
+  `}
+
+  width: 300px;
+  height: 300px;
   transform: ${(props) => {
     return `scale(${props.scale})`;
   }}
@@ -12,10 +16,11 @@ const Canvas = styled.div`
 
 const FixedCanvas = styled.div`
 ${tw`
-    bg-red-500
+    bg-red-500 
   `}
-  width: 1080px;
-  height: 1920px;
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
 `;
 
 export default function App() {
@@ -25,19 +30,20 @@ export default function App() {
   });
   React.useEffect(() => {
     setTarget(document.querySelector('.target'));
-
-    const moveable = new Moveable(document.body);
-
-    window.addEventListener('resize', (e) => {
-      moveable.updateRect();
-    });
   }, []);
 
   return (
-    <div className="container">
-      <div className="target w-full">
-        <h1 className="w-full">Targgewagewagaewgewagaewgeet</h1>
+    <div>
+      <div className="w-full h-screen bg-purple-500">
+        <Canvas scale={1}>
+          <FixedCanvas>
+            <div className="target w-full">
+              <h1 className="w-full">Lorem ipsum dolor sit amet consectetur, adipisicing elit. Distinctio, itaque?</h1>
+            </div>
+          </FixedCanvas>
+        </Canvas>
       </div>
+
       <Moveable
         target={target}
         draggable
