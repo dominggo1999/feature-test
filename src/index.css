@@ -1,13 +1,45 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Chore : untuk horizontal hilangkan */
+
+.phone-no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.no-scrollbar::-webkit-scrollbar {
+  visibility: hidden;
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  visibility: hidden;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar {
+  visibility: visible;
+}
+
+/* width */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  /* display: none; */
+}
+
+/* Track */
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #293039;
+}
+
+/* Handle */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #7f8388;
+  border-radius: 10px;
+  display: none;
+}
+
+/* Handle */
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  display: block;
 }
