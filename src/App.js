@@ -1,8 +1,8 @@
 import { Rnd } from 'react-rnd';
 import { useRef, useState } from 'react';
 import tw, { styled } from 'twin.macro';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import DomToImage from '@yzfe/dom-to-image';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import useClickOutside from './hooks/useClickOutside';
 
 const Canvas = styled.div`
@@ -24,6 +24,7 @@ ${tw`
 const App = () => {
   const ref = useRef();
   const textRef = useRef();
+  const canvasRef = useRef();
   const [scale, setScale] = useState(0.3);
 
   const [option, setOption] = useState({
@@ -115,55 +116,70 @@ const App = () => {
         >Download
         </button>
       </div>
-      <div className="w-full h-full flex justify-center items-center">
-        <Canvas
-          scale={scale}
-        >
-          <FixedCanvas ref={ref}>
-            <Rnd
-              onClick={handleClick}
-              bounds="parent"
-              scale={scale}
-              enableResizing={enableResizing}
-              disableDragging={dragging}
-              size={{ width: option.width, height: option.height }}
-              position={{
-                x: option.x,
-                y: option.y,
-              }}
-              onDragStop={handleDragStop}
-              onDragStart={handleDragStart}
-              onResizeStop={(e, direction, ref, delta, position) => {
-                setOption({
-                  ...option,
-                  width: ref.style.width,
-                  height: ref.style.height, // auto
-                  ...position,
-                });
-                setBorderOpacity(100);
-              }}
-            >
-              <div
-                ref={textRef}
-                role="region"
-                className={`relative flex w-full text-center text-white border-2 ${borderOpacity ? 'border-opacity-100' : 'border-opacity-0'} border-layer hover:border-opacity-100`}
-                // onClick={handleClick}
-                // onTouchStart={handleClick}
+      <TransformWrapper
+        panning={{
+          disabled: true,
+        }}
+        onZoomStop={(e) => {
+          setScale(e.state.scale);
+        }}
+        initialScale={scale}
+        minScale={0.1}
+        maxScale={1.5}
+        centerOnInit
+        doubleClick={{
+          disabled: true,
+        }}
+        wheel={{
+          activationKeys: ['z'],
+        }}
+      >
+        <div className="w-full h-full flex justify-center items-center">
+          <TransformComponent>
+            <FixedCanvas ref={ref}>
+              <Rnd
+                onClick={handleClick}
+                bounds="parent"
+                scale={scale}
+                enableResizing={enableResizing}
+                disableDragging={dragging}
+                size={{ width: option.width, height: option.height }}
+                position={{
+                  x: option.x,
+                  y: option.y,
+                }}
+                onDragStop={handleDragStop}
+                onDragStart={handleDragStart}
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setOption({
+                    ...option,
+                    width: ref.style.width,
+                    height: ref.style.height, // auto
+                    ...position,
+                  });
+                  setBorderOpacity(100);
+                }}
               >
                 <div
-                  className="w-full h-full break-words py-2 px-1 select-none pointer-events-none"
-                  style={{
-                    fontSize: '80px',
-                    overflowWrap: 'break-word',
-                  }}
-                >Lorem ipsum dolor sit amet consectetur
+                  ref={textRef}
+                  role="region"
+                  className={`relative flex w-full text-center text-white border-2 ${borderOpacity ? 'border-opacity-100' : 'border-opacity-0'} border-layer hover:border-opacity-100`}
+                >
+                  <div
+                    className="w-full h-full break-words py-2 px-1 select-none pointer-events-none"
+                    style={{
+                      fontSize: '80px',
+                      overflowWrap: 'break-word',
+                    }}
+                  >Lorem ipsum dolor sit amet consectetur
+                  </div>
                 </div>
-              </div>
 
-            </Rnd>
-          </FixedCanvas>
-        </Canvas>
-      </div>
+              </Rnd>
+            </FixedCanvas>
+          </TransformComponent>
+        </div>
+      </TransformWrapper>
 
     </div>
   );
