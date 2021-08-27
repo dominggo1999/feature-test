@@ -1,63 +1,95 @@
-// https://stackoverflow.com/questions/61642758/dynamically-load-font-from-file-based-on-userinput
+import { Rnd } from 'react-rnd';
+import { useRef, useState } from 'react';
+import tw, { styled } from 'twin.macro';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import DomToImage from '@yzfe/dom-to-image';
 
-import { useState, useRef } from 'react';
+const Canvas = styled.div`
+  width: 1080px;
+  height: 1920px;
+  transform: ${(props) => {
+    return `scale(${props.scale})`;
+  }}
+`;
+
+const FixedCanvas = styled.div`
+${tw`
+    bg-red-500
+  `}
+  width: 1080px;
+  height: 1920px;
+`;
 
 const App = () => {
   const ref = useRef();
-  const [fontList, setFontList] = useState([]);
-  const [activeFont, setActiveFont] = useState('sans-serif');
+  const [scale, setScale] = useState(0.3);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const file = ref.current.files[0];
-    const data = await file.arrayBuffer();
-    const fontFamily = file.name.split('.')[0];
+  const updateScale = (e) => {
+    setScale(parseFloat(e.target.value));
+  };
 
-    const font = new FontFace(fontFamily, data);
-    await font.load();
-    document.fonts.add(font);
+  const toImage = async () => {
+    const node = ref.current;
 
-    // Add font to list
-    setFontList([
-      ...fontList,
-      fontFamily,
-    ]);
+    await DomToImage.toPng(node).then((dataUrl) => {
+      // const imageURL = canvas.toDataURL('image/png');
+      // const a = document.createElement('a');
+      const link = document.createElement('a');
+      link.download = 'my-beautiful-quote.png';
+      link.href = dataUrl;
+      link.click();
+    });
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
+    <div className="w-full h-screen bg-red-400 relative">
+      <div className="fixed z-50">
         <input
-          type="file"
-          ref={ref}
+          type="range"
+          min="0.1"
+          max="2"
+          step="0.01"
+          value={scale}
+          onChange={updateScale}
         />
         <button
-          className="bg-red-500 text-white p-3"
-          type="submit"
-        >Upload
+          className=" bg-indigo-600"
+          onClick={toImage}
+        >Download
         </button>
-      </form>
+      </div>
+      <div className="w-full h-full flex justify-center items-center">
+        <Canvas
+          scale={scale}
+        >
+          <FixedCanvas ref={ref}>
+            <img
+              src="https://images.pexels.com/photos/3754600/pexels-photo-3754600.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+              alt="Cool"
+              className="h-full"
+            />
+            <Rnd
+              bounds="parent"
+              scale={scale}
+              default={{
+                x: 0,
+                y: 0,
+                width: 1000,
+                height: 1000,
+              }}
+            >
+              <h1
+                className="text-white"
+                style={{
+                  fontSize: '80px',
+                }}
+              >Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam at accusamus incidunt quos animi voluptates beatae, laboriosam nostrum unde voluptatibus?
+              </h1>
+            </Rnd>
+          </FixedCanvas>
+        </Canvas>
+      </div>
 
-      <ul className="mb-20">
-        {
-          fontList && fontList.map((font) => {
-            return (
-              <li
-                onClick={() => setActiveFont(font)}
-                key={`font-${font}`}
-              >{font}
-              </li>
-            );
-          })
-        }
-      </ul>
-      <h1
-        className="text-8xl"
-        style={{
-          fontFamily: activeFont,
-        }}
-      >A very big text
-      </h1>
     </div>
   );
 };
