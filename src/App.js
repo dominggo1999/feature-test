@@ -1,39 +1,42 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 const App = () => {
   const ref = useRef();
+  const [imageURL, setImageURL] = useState('https://images.pexels.com/photos/7538060/pexels-photo-7538060.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940');
 
-  const createFontFace = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const file = ref.current.files[0];
-    const filename = file.name;
-    const fontFamily = filename.split('.')[0];
 
-    const myFont = new Font(fontFamily);
-
-    // Use filereader to read the file
     const reader = new FileReader();
-    reader.readAsArrayBuffer(file);
-
+    const img = new Image();
     reader.onload = () => {
-      // Pass the buffer, and the original filename
-      myFont.fromDataBuffer(reader.result, file.name);
-      myFont.onload = (e) => {
-        // ...
-      };
+      img.src = reader.result;
+      setImageURL(reader.result);
     };
+
+    img.onload = () => {
+      console.log(img.naturalHeight, img.naturalWidth);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
     <div>
-      <h1>Upload your font</h1>
-      <form onSubmit={createFontFace}>
+      <form>
         <input
+          onChange={handleSubmit}
           ref={ref}
+          accept="image/png,image/jpeg,image/jpg"
           type="file"
         />
         <button type="submit">Upload</button>
       </form>
+      <img
+        src={imageURL}
+        alt="Choco"
+      />
     </div>
   );
 };
