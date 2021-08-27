@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import tw, { styled } from 'twin.macro';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import DomToImage from '@yzfe/dom-to-image';
+import useClickOutside from './hooks/useClickOutside';
 
 const Canvas = styled.div`
   width: 1080px;
@@ -22,7 +23,24 @@ ${tw`
 
 const App = () => {
   const ref = useRef();
+  const textRef = useRef();
   const [scale, setScale] = useState(0.3);
+
+  const [option, setOption] = useState({
+    x: 0, y: 0, width: 800, height: 'auto',
+  });
+  const [borderOpacity, setBorderOpacity] = useState(0);
+  const [enableResizing, setEnableResizing] = useState({
+    top: false,
+    right: false,
+    left: false,
+    bottom: false,
+    topRight: false,
+    bottomRight: false,
+    bottomLeft: false,
+    topLeft: false,
+  });
+  const [dragging, setDragging] = useState(true);
 
   const updateScale = (e) => {
     setScale(parseFloat(e.target.value));
@@ -40,6 +58,45 @@ const App = () => {
       link.click();
     });
   };
+
+  const handleDragStart = (e) => {
+    if(enableResizing.left && enableResizing.right) {
+      setBorderOpacity(100);
+    }
+  };
+
+  const handleDragStop = (e, d) => {
+    if(enableResizing.left && enableResizing.right) {
+      setOption({
+        ...option,
+        x: d.x,
+        y: d.y,
+      });
+    }
+  };
+
+  const handleClick = (e) => {
+    setDragging(false);
+    setBorderOpacity(100);
+
+    setEnableResizing({
+      ...enableResizing,
+      left: true,
+      right: true,
+    });
+  };
+
+  const toggleEditable = () => {
+    setDragging(true);
+    setEnableResizing({
+      ...enableResizing,
+      left: false,
+      right: false,
+    });
+    setBorderOpacity(0);
+  };
+
+  useClickOutside(textRef, toggleEditable);
 
   return (
     <div className="w-full h-screen bg-red-400 relative">
@@ -63,28 +120,46 @@ const App = () => {
           scale={scale}
         >
           <FixedCanvas ref={ref}>
-            <img
-              src="https://images.pexels.com/photos/3754600/pexels-photo-3754600.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
-              alt="Cool"
-              className="h-full"
-            />
             <Rnd
+              onClick={handleClick}
               bounds="parent"
               scale={scale}
-              default={{
-                x: 0,
-                y: 0,
-                width: 1000,
-                height: 1000,
+              enableResizing={enableResizing}
+              disableDragging={dragging}
+              size={{ width: option.width, height: option.height }}
+              position={{
+                x: option.x,
+                y: option.y,
+              }}
+              onDragStop={handleDragStop}
+              onDragStart={handleDragStart}
+              onResizeStop={(e, direction, ref, delta, position) => {
+                setOption({
+                  ...option,
+                  width: ref.style.width,
+                  height: ref.style.height, // auto
+                  ...position,
+                });
+                setBorderOpacity(100);
               }}
             >
-              <h1
-                className="text-white"
-                style={{
-                  fontSize: '80px',
-                }}
-              >Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam at accusamus incidunt quos animi voluptates beatae, laboriosam nostrum unde voluptatibus?
-              </h1>
+              <div
+                ref={textRef}
+                role="region"
+                className={`relative flex w-full text-center text-white border-2 ${borderOpacity ? 'border-opacity-100' : 'border-opacity-0'} border-layer hover:border-opacity-100`}
+                // onClick={handleClick}
+                // onTouchStart={handleClick}
+              >
+                <div
+                  className="w-full h-full break-words py-2 px-1 select-none pointer-events-none"
+                  style={{
+                    fontSize: '80px',
+                    overflowWrap: 'break-word',
+                  }}
+                >Lorem ipsum dolor sit amet consectetur
+                </div>
+              </div>
+
             </Rnd>
           </FixedCanvas>
         </Canvas>
