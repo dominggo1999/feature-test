@@ -1,5 +1,22 @@
 import * as React from 'react';
 import Moveable from 'react-moveable';
+import tw, { styled } from 'twin.macro';
+
+const Canvas = styled.div`
+  width: 1080px;
+  height: 1920px;
+  transform: ${(props) => {
+    return `scale(${props.scale})`;
+  }}
+`;
+
+const FixedCanvas = styled.div`
+${tw`
+    bg-red-500
+  `}
+  width: 1080px;
+  height: 1920px;
+`;
 
 export default function App() {
   const [target, setTarget] = React.useState();
