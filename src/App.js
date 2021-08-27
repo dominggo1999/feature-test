@@ -1,97 +1,72 @@
-import { Rnd } from 'react-rnd';
-import { useRef, useState } from 'react';
-import tw, { styled } from 'twin.macro';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import DomToImage from '@yzfe/dom-to-image';
+import * as React from 'react';
+import Moveable from 'react-moveable';
 
-const Canvas = styled.div`
-  width: 1080px;
-  height: 1920px;
-  transform: ${(props) => {
-    return `scale(${props.scale})`;
-  }}
-`;
+export default function App() {
+  const [target, setTarget] = React.useState();
+  const [frame, setFrame] = React.useState({
+    translate: [0, 0],
+  });
+  React.useEffect(() => {
+    setTarget(document.querySelector('.target'));
 
-const FixedCanvas = styled.div`
-${tw`
-    bg-red-500
-  `}
-  width: 1080px;
-  height: 1920px;
-`;
+    const moveable = new Moveable(document.body);
 
-const App = () => {
-  const ref = useRef();
-  const [scale, setScale] = useState(0.3);
-
-  const updateScale = (e) => {
-    setScale(parseFloat(e.target.value));
-  };
-
-  const toImage = async () => {
-    const node = ref.current;
-
-    await DomToImage.toPng(node).then((dataUrl) => {
-      // const imageURL = canvas.toDataURL('image/png');
-      // const a = document.createElement('a');
-      const link = document.createElement('a');
-      link.download = 'my-beautiful-quote.png';
-      link.href = dataUrl;
-      link.click();
+    window.addEventListener('resize', (e) => {
+      moveable.updateRect();
     });
-  };
+  }, []);
 
   return (
-    <div className="w-full h-screen bg-red-400 relative">
-      <div className="fixed z-50">
-        <input
-          type="range"
-          min="0.1"
-          max="2"
-          step="0.01"
-          value={scale}
-          onChange={updateScale}
-        />
-        <button
-          className=" bg-indigo-600"
-          onClick={toImage}
-        >Download
-        </button>
+    <div className="container">
+      <div className="target w-full">
+        <h1 className="w-full">Targgewagewagaewgewagaewgeet</h1>
       </div>
-      <div className="w-full h-full flex justify-center items-center">
-        <Canvas
-          scale={scale}
-        >
-          <FixedCanvas ref={ref}>
-            <img
-              src="https://images.pexels.com/photos/3754600/pexels-photo-3754600.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
-              alt="Cool"
-              className="h-full"
-            />
-            <Rnd
-              bounds="parent"
-              scale={scale}
-              default={{
-                x: 0,
-                y: 0,
-                width: 1000,
-                height: 1000,
-              }}
-            >
-              <h1
-                className="text-white"
-                style={{
-                  fontSize: '80px',
-                }}
-              >Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam at accusamus incidunt quos animi voluptates beatae, laboriosam nostrum unde voluptatibus?
-              </h1>
-            </Rnd>
-          </FixedCanvas>
-        </Canvas>
-      </div>
-
+      <Moveable
+        target={target}
+        draggable
+        throttleDrag={0}
+        startDragRotate={0}
+        throttleDragRotate={0}
+        zoom={1}
+        origin={false}
+        padding={{
+          left: 0, top: 0, right: 0, bottom: 0,
+        }}
+        onDragStart={(e) => {
+          e.set(frame.translate);
+        }}
+        onDrag={({ target, beforeTranslate }) => {
+          target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
+        }}
+        onDragEnd={({ lastEvent }) => {
+          if (lastEvent) {
+            frame.translate = lastEvent.beforeTranslate;
+          }
+        }}
+        resizable
+        keepRatio={false}
+        throttleResize={0}
+        renderDirections={['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se']}
+        onResizeStart={(e) => {
+          e.setOrigin(['%', '%']);
+          e.dragStart && e.dragStart.set(frame.translate);
+          e.setMin([50, 50]);
+        }}
+        onResize={({
+          target, width, height, drag,
+        }) => {
+          console.log(width, height);
+          const beforeTranslate = drag.beforeTranslate;
+          target.style.width = `${width}px`;
+          target.style.height = `${height}px`;
+          target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
+        }}
+        onResizeEnd={({ lastEvent }) => {
+          if (lastEvent) {
+            frame.translate = lastEvent.drag.beforeTranslate;
+          }
+        }}
+      />
     </div>
   );
-};
-
-export default App;
+}
