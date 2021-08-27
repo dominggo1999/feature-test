@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 
 // https://stackoverflow.com/questions/4459379/preview-an-image-before-it-is-uploaded
+// http://jsbin.com/uhigib/1/edit?html,js,output
 
 const App = () => {
   const ref = useRef();
