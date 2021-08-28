@@ -64,7 +64,7 @@ const App = () => {
   // Set up panzoom on mount, and dispose on unmount
   useLayoutEffect(() => {
     const instance = panzoom(elementRef.current, {
-      initialZoom: 0.25,
+      initialZoom: 1,
       minZoom: 0.25,
       maxZoom: 4,
       onDoubleClick(e) {
