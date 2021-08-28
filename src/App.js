@@ -10,15 +10,19 @@ const Canvas = styled.div`
   height: 1920px;
   transform: ${(props) => {
     return `scale(${props.scale})`;
-  }}
+  }};
+  transform-origin: center center;
 `;
 
 const FixedCanvas = styled.div`
-${tw`
+  ${tw`
     bg-red-500
   `}
   width: 1080px;
   height: 1920px;
+  transform: ${(props) => {
+    return `scale(${props.scale})`;
+  }}
 `;
 
 const App = () => {
@@ -105,10 +109,11 @@ const App = () => {
         <input
           type="range"
           min="0.1"
-          max="2"
+          max="1.5"
           step="0.01"
           value={scale}
           onChange={updateScale}
+          className="mx-10 w-60"
         />
         <button
           className=" bg-indigo-600"
@@ -116,71 +121,21 @@ const App = () => {
         >Download
         </button>
       </div>
-      <TransformWrapper
-        panning={{
-          disabled: true,
+      <div
+        style={{
+          transform: `scale(${scale})`,
         }}
-        onZoomStop={(e) => {
-          setScale(e.state.scale);
-        }}
-        initialScale={scale}
-        minScale={0.1}
-        maxScale={1.5}
-        centerOnInit
-        doubleClick={{
-          disabled: true,
-        }}
-        wheel={{
-          activationKeys: ['z'],
-        }}
+        className="w-full h-full flex items-center justify-center"
       >
-        <div className="w-full h-full flex justify-center items-center">
-          <TransformComponent>
-            <FixedCanvas ref={ref}>
-              <Rnd
-                onClick={handleClick}
-                bounds="parent"
-                scale={scale}
-                enableResizing={enableResizing}
-                disableDragging={dragging}
-                size={{ width: option.width, height: option.height }}
-                position={{
-                  x: option.x,
-                  y: option.y,
-                }}
-                onDragStop={handleDragStop}
-                onDragStart={handleDragStart}
-                onResizeStop={(e, direction, ref, delta, position) => {
-                  setOption({
-                    ...option,
-                    width: ref.style.width,
-                    height: ref.style.height, // auto
-                    ...position,
-                  });
-                  setBorderOpacity(100);
-                }}
-              >
-                <div
-                  ref={textRef}
-                  role="region"
-                  className={`relative flex w-full text-center text-white border-2 ${borderOpacity ? 'border-opacity-100' : 'border-opacity-0'} border-layer hover:border-opacity-100`}
-                >
-                  <div
-                    className="w-full h-full break-words py-2 px-1 select-none pointer-events-none"
-                    style={{
-                      fontSize: '80px',
-                      overflowWrap: 'break-word',
-                    }}
-                  >Lorem ipsum dolor sit amet consectetur
-                  </div>
-                </div>
-
-              </Rnd>
-            </FixedCanvas>
-          </TransformComponent>
+        <div
+          className="bg-blue-600"
+          style={{
+            width: 600,
+            height: 600,
+          }}
+        >
         </div>
-      </TransformWrapper>
-
+      </div>
     </div>
   );
 };
