@@ -1,14 +1,13 @@
+import { Rnd } from 'react-rnd';
 import { useRef, useState } from 'react';
 import tw, { styled } from 'twin.macro';
+import DomToImage from '@yzfe/dom-to-image';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { Rnd } from 'react-rnd';
+import useClickOutside from './hooks/useClickOutside';
 
 const Canvas = styled.div`
-  ${tw`
-    mx-auto
-  `}
-  width: 300px;
-  height: 300px;
+  width: 1080px;
+  height: 1920px;
   transform: ${(props) => {
     return `scale(${props.scale})`;
   }}
@@ -16,75 +15,232 @@ const Canvas = styled.div`
 
 const FixedCanvas = styled.div`
 ${tw`
-    bg-red-500 
-  `}
-  width: 300px;
-  height: 300px;
-  margin: 0 auto;
-`;
-
-const Container = styled.div`
-  ${tw`
-    w-full
-    h-screen
-    flex
-    justify-center
-    items-center
     bg-red-500
   `}
+  width: 1080px;
+  height: 1920px;
 `;
 
 const App = () => {
+  const ref = useRef();
+  const textRef = useRef();
+  const bigRef = useRef();
+  const transformComponentRef = useRef(null);
   const [scale, setScale] = useState(0.3);
+  const [disablePanning, setDisablePanning] = useState(false);
+
+  const [option, setOption] = useState({
+    x: 0, y: 0, width: 800, height: 'auto',
+  });
+  const [borderOpacity, setBorderOpacity] = useState(0);
+  const [enableResizing, setEnableResizing] = useState({
+    top: false,
+    right: false,
+    left: false,
+    bottom: false,
+    topRight: false,
+    bottomRight: false,
+    bottomLeft: false,
+    topLeft: false,
+  });
+  const [dragging, setDragging] = useState(true);
+
+  const toImage = async () => {
+    const node = ref.current;
+
+    await DomToImage.toPng(node).then((dataUrl) => {
+      // const imageURL = canvas.toDataURL('image/png');
+      // const a = document.createElement('a');
+      const link = document.createElement('a');
+      link.download = 'my-beautiful-quote.png';
+      link.href = dataUrl;
+      link.click();
+    });
+  };
+
+  const handleDragStart = (e) => {
+    if(enableResizing.left && enableResizing.right) {
+      setBorderOpacity(100);
+    }
+    setDisablePanning(true);
+  };
+
+  const handleDragStop = (e, d) => {
+    if(enableResizing.left && enableResizing.right) {
+      setOption({
+        ...option,
+        x: d.x,
+        y: d.y,
+      });
+    }
+  };
+
+  const handleClick = (e) => {
+    setDragging(false);
+    setBorderOpacity(100);
+
+    setEnableResizing({
+      ...enableResizing,
+      left: true,
+      right: true,
+    });
+  };
+
+  const toggleEditable = () => {
+    setDragging(true);
+    setEnableResizing({
+      ...enableResizing,
+      left: false,
+      right: false,
+    });
+    setBorderOpacity(0);
+    setDisablePanning(false);
+  };
+
+  useClickOutside(textRef, toggleEditable);
+
+  const center = () => {
+    const { centerView } = transformComponentRef.current;
+    centerView();
+  };
+
+  const resetScale = () => {
+    const { setTransform } = transformComponentRef.current;
+
+    const x = (bigRef.current.clientWidth - 1080 * 0.3) / 2;
+    const y = (bigRef.current.clientHeight - 1920 * 0.3) / 2;
+
+    setTransform(x, y, 0.3);
+    setScale(0.3);
+  };
+
+  const updateScale = (e) => {
+    const newScale = parseFloat(e.target.value);
+    const ratio = (newScale - scale) / scale;
+    const { positionX, positionY } = transformComponentRef.current.state;
+    const { zoomIn, zoomOut } = transformComponentRef.current;
+
+    console.log(newScale, scale);
+
+    console.log((ratio * scale) + scale, newScale, ratio);
+
+    if(newScale > scale) {
+      zoomIn(ratio, 0);
+    }else{
+      zoomOut(-ratio, 0);
+    }
+
+    setScale((ratio * scale) + scale);
+  };
+
   return (
-    <div>
-      <Container>
+    <div className="w-full h-screen bg-red-400 relative">
+      <div className="fixed z-50">
+        <input
+          type="range"
+          min="0.1"
+          max="1.5"
+          step="0.01"
+          value={scale}
+          onChange={updateScale}
+        />
+        <button
+          className=" bg-indigo-600 mx-3"
+          onClick={toImage}
+        >Download
+        </button>
+        <button
+          className=" bg-indigo-600 mx-3"
+          onClick={center}
+        >Center
+        </button>
+        <button
+          className=" bg-indigo-600 mx-3"
+          onClick={resetScale}
+        >Reset
+        </button>
+      </div>
+      <div
+        ref={bigRef}
+        className="w-full h-full justify-center items-center"
+      >
         <TransformWrapper
-          doubleClick={{ disabled: true }}
-          minScale={0.1}
-          maxScale={2}
+          ref={transformComponentRef}
+          onZoomStop={(e) => {
+            setScale(e.state.scale);
+          }}
           initialScale={scale}
-          limitToBounds={false}
-          centerOnInit
-          alignmentAnimation={{
-            sizeX: 100,
-            sizeY: 100,
+          minScale={0.1}
+          maxScale={1.5}
+          doubleClick={{
+            disabled: true,
           }}
           wheel={{
             activationKeys: ['z'],
           }}
           panning={{
             activationKeys: ['x'],
+            disabled: disablePanning,
           }}
-          onZoom={(e) => {
-            setScale(e.state.scale);
-          }}
+          limitToBounds={false}
+          zoomAnimation={{ disabled: true }}
+          centerOnInit
         >
-          <TransformComponent>
-            <div className="w-screen h-screen flex justify-center items-center">
-              <div
-                style={{
-                  width: '1000px',
-                  height: '1000px',
+          {({
+            zoomIn, zoomOut, setTransform, ...rest
+          }) => {
+            return (
+              <TransformComponent
+                wrapperStyle={{
+                  width: '100%',
+                  height: '100%',
                 }}
-                className="bg-blue-900"
               >
-                <Rnd
-                  default={{
-                    x: 0,
-                    y: 0,
-                    width: 520,
-                    height: 500,
-                  }}
-                  scale={scale}
-                >
-                  <h1 className="text-8xl">geawgewagew</h1>
-                </Rnd>
-              </div>
-            </div>
-          </TransformComponent>
+                <FixedCanvas ref={ref}>
+                  <Rnd
+                    onClick={handleClick}
+                    bounds="parent"
+                    scale={scale}
+                    enableResizing={enableResizing}
+                    disableDragging={dragging}
+                    size={{ width: option.width, height: option.height }}
+                    position={{
+                      x: option.x,
+                      y: option.y,
+                    }}
+                    onDragStop={handleDragStop}
+                    onDragStart={handleDragStart}
+                    onResizeStop={(e, direction, ref, delta, position) => {
+                      setOption({
+                        ...option,
+                        width: ref.style.width,
+                        height: ref.style.height, // auto
+                        ...position,
+                      });
+                      setBorderOpacity(100);
+                    }}
+                  >
+                    <div
+                      ref={textRef}
+                      role="region"
+                      className={`relative flex w-full text-center text-white border-2 ${borderOpacity ? 'border-opacity-100' : 'border-opacity-0'} border-layer hover:border-opacity-100`}
+                    >
+                      <div
+                        className="w-full h-full break-words py-2 px-1 select-none pointer-events-none"
+                        style={{
+                          fontSize: '80px',
+                          overflowWrap: 'break-word',
+                        }}
+                      >Lorem ipsum dolor sit amet consectetur
+                      </div>
+                    </div>
+                  </Rnd>
+                </FixedCanvas>
+              </TransformComponent>
+            );
+          }}
         </TransformWrapper>
-      </Container>
+      </div>
     </div>
   );
 };
