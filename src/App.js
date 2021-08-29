@@ -116,13 +116,10 @@ const App = () => {
 
   const updateScale = (e) => {
     const newScale = parseFloat(e.target.value);
-    const ratio = (newScale - scale) / scale;
-    const { positionX, positionY } = transformComponentRef.current.state;
+    const ratio = Math.log(newScale / scale);
     const { zoomIn, zoomOut } = transformComponentRef.current;
 
-    console.log(newScale, scale);
-
-    console.log((ratio * scale) + scale, newScale, ratio);
+    console.log(scale * Math.exp(1 * ratio), newScale);
 
     if(newScale > scale) {
       zoomIn(ratio, 0);
@@ -130,7 +127,7 @@ const App = () => {
       zoomOut(-ratio, 0);
     }
 
-    setScale((ratio * scale) + scale);
+    setScale(scale * Math.exp(1 * ratio));
   };
 
   return (
@@ -185,6 +182,9 @@ const App = () => {
           limitToBounds={false}
           zoomAnimation={{ disabled: true }}
           centerOnInit
+          onZoom={(e) => {
+            setScale(e.state.scale);
+          }}
         >
           {({
             zoomIn, zoomOut, setTransform, ...rest
