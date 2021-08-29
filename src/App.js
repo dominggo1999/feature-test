@@ -124,30 +124,8 @@ const App = () => {
     const initialChildWidth = 200;
     const w = wrapperRef.current;
     const c = contentRef.current;
-    const wX = w.scrollLeft;
-    const wY = w.scrollTop;
 
     const currentChildWidth = scale * initialChildWidth;
-    if(currentChildWidth > wrapperWidth) {
-      const delta = (currentChildWidth - wrapperWidth) / 2;
-
-      const newOffset = delta / scale;
-      setOffsetLeft(newOffset);
-      setOffsetTop(newOffset);
-
-      const centerLeft = delta;
-      const centerTop = delta;
-
-      wrapperRef.current.scrollTo(centerLeft, centerTop);
-    }else{
-      setOffsetLeft(0);
-      setOffsetTop(0);
-      setPreviousScroll({
-        ...previousScroll,
-        x: 0,
-        y: 0,
-      });
-    }
   };
 
   const handleScroll = (e) => {
