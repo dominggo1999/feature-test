@@ -110,8 +110,8 @@ const App = () => {
 
   useClickOutside(textRef, toggleEditable);
 
-  // Wrapper ref
   const wrapperRef = useRef(null);
+  const contentRef = useRef(null);
 
   const updateScale = (e) => {
     const scale = parseFloat(e.target.value);
@@ -122,26 +122,43 @@ const App = () => {
     // Center scrollbar
     const wrapperWidth = 500;
     const initialChildWidth = 200;
+    const w = wrapperRef.current;
+    const c = contentRef.current;
+    const wX = w.scrollLeft;
+    const wY = w.scrollTop;
 
     const currentChildWidth = scale * initialChildWidth;
     if(currentChildWidth > wrapperWidth) {
       const delta = (currentChildWidth - wrapperWidth) / 2;
-      const w = wrapperRef.current;
-      const wX = w.scrollLeft;
-      const wY = w.scrollTop;
 
-      const newOffset = delta / (scale);
+      const newOffset = delta / scale;
       setOffsetLeft(newOffset);
       setOffsetTop(newOffset);
 
-      const scrollLeft = newOffset * scale;
-      const scrollTop = newOffset * scale;
+      const centerLeft = delta;
+      const centerTop = delta;
 
-      // wrapperRef.current.scrollTo(scrollLeft, scrollTop);
+      wrapperRef.current.scrollTo(centerLeft, centerTop);
     }else{
       setOffsetLeft(0);
       setOffsetTop(0);
+      setPreviousScroll({
+        ...previousScroll,
+        x: 0,
+        y: 0,
+      });
     }
+  };
+
+  const handleScroll = (e) => {
+    const w = wrapperRef.current;
+    const c = contentRef.current;
+
+    setPreviousScroll({
+      ...previousScroll,
+      x: w.scrollLeft,
+      y: w.scrollTop,
+    });
   };
 
   return (
@@ -164,15 +181,17 @@ const App = () => {
             height: '500px',
           }}
           className="mx-auto mt-4 bg-blue-600 flex justify-center items-center overflow-scroll"
+          onScroll={handleScroll}
         >
           {/* Kotak di tengah */}
           <div
             style={{
               width: '200px',
               height: '200px',
-              transform: `scale(${scale}) `,
+              transform: `scale(${scale}) translate(${offsetLeft}px, ${offsetTop}px)`,
             }}
             className="bg-yellow-600 select-none"
+            ref={contentRef}
           >
             Lorem, ipsum dolor sit amet consectetur adipisicing elit. Consequatur, quidem dolore amet voluptatum illo repellat totam aut magni nulla suscipit
           </div>
