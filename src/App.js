@@ -32,6 +32,15 @@ const App = () => {
   const [scale, setScale] = useState(0.3);
   const [offsetLeft, setOffsetLeft] = useState(0);
   const [offsetTop, setOffsetTop] = useState(0);
+  const [scroll, setScroll] = useState({
+    x: 0,
+    y: 0,
+  });
+  const [previousScroll, setPreviousScroll] = useState({
+    x: 0,
+    y: 0,
+    scale: 0,
+  });
 
   const [option, setOption] = useState({
     x: 0, y: 0, width: 800, height: 'auto',
@@ -108,16 +117,27 @@ const App = () => {
     const scale = parseFloat(e.target.value);
     setScale(scale);
 
+    // console.log(document.querySelector('#wrapper').scrollLeft);
+
     // Center scrollbar
     const wrapperWidth = 500;
     const initialChildWidth = 200;
 
     const currentChildWidth = scale * initialChildWidth;
     if(currentChildWidth > wrapperWidth) {
-      const newOffset = (currentChildWidth - wrapperWidth) / (2 * scale);
+      const delta = (currentChildWidth - wrapperWidth) / 2;
+      const w = wrapperRef.current;
+      const wX = w.scrollLeft;
+      const wY = w.scrollTop;
+
+      const newOffset = delta / (scale);
       setOffsetLeft(newOffset);
       setOffsetTop(newOffset);
-      wrapperRef.current.scrollTo(newOffset * scale, newOffset * scale);
+
+      const scrollLeft = newOffset * scale;
+      const scrollTop = newOffset * scale;
+
+      // wrapperRef.current.scrollTo(scrollLeft, scrollTop);
     }else{
       setOffsetLeft(0);
       setOffsetTop(0);
@@ -130,29 +150,29 @@ const App = () => {
         <input
           type="range"
           min="0.1"
-          max="4"
+          max="8"
           step="0.01"
           value={scale}
           onChange={updateScale}
           className="mx-auto w-60 mt-5"
         />
         <div
+          id="wrapper"
           ref={wrapperRef}
           style={{
             width: '500px',
             height: '500px',
           }}
-          className="mx-auto mt-4 bg-blue-600 flex justify-center items-center overflow-auto"
+          className="mx-auto mt-4 bg-blue-600 flex justify-center items-center overflow-scroll"
         >
           {/* Kotak di tengah */}
-          {console.log(offsetLeft)}
           <div
             style={{
               width: '200px',
               height: '200px',
-              transform: `scale(${scale}) translate(${offsetLeft}px,${offsetTop}px)`,
+              transform: `scale(${scale}) `,
             }}
-            className="bg-yellow-600"
+            className="bg-yellow-600 select-none"
           >
             Lorem, ipsum dolor sit amet consectetur adipisicing elit. Consequatur, quidem dolore amet voluptatum illo repellat totam aut magni nulla suscipit
           </div>
