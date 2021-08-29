@@ -30,6 +30,8 @@ const App = () => {
   const textRef = useRef();
   const canvasRef = useRef();
   const [scale, setScale] = useState(0.3);
+  const [offsetLeft, setOffsetLeft] = useState(0);
+  const [offsetTop, setOffsetTop] = useState(0);
 
   const [option, setOption] = useState({
     x: 0, y: 0, width: 800, height: 'auto',
@@ -46,10 +48,6 @@ const App = () => {
     topLeft: false,
   });
   const [dragging, setDragging] = useState(true);
-
-  const updateScale = (e) => {
-    setScale(parseFloat(e.target.value));
-  };
 
   const toImage = async () => {
     const node = ref.current;
@@ -103,37 +101,61 @@ const App = () => {
 
   useClickOutside(textRef, toggleEditable);
 
+  // Wrapper ref
+  const wrapperRef = useRef(null);
+
+  const updateScale = (e) => {
+    const scale = parseFloat(e.target.value);
+    setScale(scale);
+
+    // Center scrollbar
+    const wrapperWidth = 500;
+    const initialChildWidth = 200;
+
+    const currentChildWidth = scale * initialChildWidth;
+    if(currentChildWidth > wrapperWidth) {
+      const newOffset = (currentChildWidth - wrapperWidth) / (2 * scale);
+      setOffsetLeft(newOffset);
+      setOffsetTop(newOffset);
+      wrapperRef.current.scrollTo(newOffset * scale, newOffset * scale);
+    }else{
+      setOffsetLeft(0);
+      setOffsetTop(0);
+    }
+  };
+
   return (
     <div className="w-full h-screen bg-red-400 relative">
-      <div className="fixed z-50">
+      <div className="w-full flex justify-center flex-col">
         <input
           type="range"
           min="0.1"
-          max="1.5"
+          max="4"
           step="0.01"
           value={scale}
           onChange={updateScale}
-          className="mx-10 w-60"
+          className="mx-auto w-60 mt-5"
         />
-        <button
-          className=" bg-indigo-600"
-          onClick={toImage}
-        >Download
-        </button>
-      </div>
-      <div
-        style={{
-          transform: `scale(${scale})`,
-        }}
-        className="w-full h-full flex items-center justify-center"
-      >
         <div
-          className="bg-blue-600"
+          ref={wrapperRef}
           style={{
-            width: 600,
-            height: 600,
+            width: '500px',
+            height: '500px',
           }}
+          className="mx-auto mt-4 bg-blue-600 flex justify-center items-center overflow-auto"
         >
+          {/* Kotak di tengah */}
+          {console.log(offsetLeft)}
+          <div
+            style={{
+              width: '200px',
+              height: '200px',
+              transform: `scale(${scale}) translate(${offsetLeft}px,${offsetTop}px)`,
+            }}
+            className="bg-yellow-600"
+          >
+            Lorem, ipsum dolor sit amet consectetur adipisicing elit. Consequatur, quidem dolore amet voluptatum illo repellat totam aut magni nulla suscipit
+          </div>
         </div>
       </div>
     </div>
