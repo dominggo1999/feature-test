@@ -1,9 +1,10 @@
 import { Rnd } from 'react-rnd';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import tw, { styled } from 'twin.macro';
 import DomToImage from '@yzfe/dom-to-image';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import useClickOutside from './hooks/useClickOutside';
+import Top from './components/Top';
 
 const Canvas = styled.div`
   width: 1080px;
@@ -23,11 +24,56 @@ ${tw`
 
 const App = () => {
   const ref = useRef();
+  const bigWrapperRef = useRef();
   const textRef = useRef();
   const bigRef = useRef();
   const transformComponentRef = useRef(null);
   const [scale, setScale] = useState(0.3);
   const [disablePanning, setDisablePanning] = useState(false);
+  const [viewableDimension, setViewableDimension] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [canvasOverflow, setCanvasOverflow] = useState(false);
+  const [viewableIndicator, setViewableIndicator] = useState({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+
+  const resetScale = (time) => {
+    const { setTransform } = transformComponentRef.current;
+
+    const x = (bigRef.current.clientWidth - 1080 * 0.3) / 2;
+    const y = (bigRef.current.clientHeight - 1920 * 0.3) / 2;
+
+    setTransform(x, y, 0.3, time);
+    setScale(0.3);
+  };
+
+  const updateViewableDimension = () => {
+    const view = bigRef.current;
+    setViewableDimension({
+      ...viewableDimension,
+      width: view.clientWidth,
+      height: view.clientHeight,
+    });
+  };
+
+  useEffect(() => {
+    const whenResize = (e) => {
+      resetScale();
+      updateViewableDimension();
+    };
+
+    updateViewableDimension();
+
+    window.addEventListener('resize', whenResize);
+    return () => {
+      window.removeEventListener('resize', whenResize);
+    };
+  }, []);
 
   const [option, setOption] = useState({
     x: 0, y: 0, width: 800, height: 'auto',
@@ -55,6 +101,15 @@ const App = () => {
       link.download = 'my-beautiful-quote.png';
       link.href = dataUrl;
       link.click();
+    });
+  };
+
+  // Draggable Indicator
+  const onIndicatorDragStop = (e, d) => {
+    setViewableIndicator({
+      ...viewableIndicator,
+      x: d.x,
+      y: d.y,
     });
   };
 
@@ -104,22 +159,10 @@ const App = () => {
     centerView();
   };
 
-  const resetScale = () => {
-    const { setTransform } = transformComponentRef.current;
-
-    const x = (bigRef.current.clientWidth - 1080 * 0.3) / 2;
-    const y = (bigRef.current.clientHeight - 1920 * 0.3) / 2;
-
-    setTransform(x, y, 0.3);
-    setScale(0.3);
-  };
-
   const updateScale = (e) => {
     const newScale = parseFloat(e.target.value);
     const ratio = Math.log(newScale / scale);
     const { zoomIn, zoomOut } = transformComponentRef.current;
-
-    console.log(scale * Math.exp(1 * ratio), newScale);
 
     if(newScale > scale) {
       zoomIn(ratio, 0);
@@ -130,33 +173,94 @@ const App = () => {
     setScale(scale * Math.exp(1 * ratio));
   };
 
+  const handleWrapperInit = (e) => {
+  };
+
+  const handleZoomStop = (e) => {
+    const a = transformComponentRef.current;
+    const cw = 1080 * e.state.scale;
+    const ch = 1920 * e.state.scale;
+
+    const { width, height } = viewableDimension;
+    const vw = width;
+    const vh = height;
+
+    const iw = 1080 / 5;
+    const ih = 1920 / 5;
+
+    const totalOverflowLength = ch - (-e.state.positionY) - vh;
+    const{
+      x, y, bottom, left,
+    } = a.instance.contentComponent.getBoundingClientRect();
+
+    // console.log(y, (-e.state.positionY), bottom - vh, ch - (-e.state.positionY) - vh);
+
+    const sisaAtas = -e.state.positionY;
+    const sisaBawah = ch - (-e.state.positionY) - vh;
+
+    console.log(sisaBawah);
+
+    if(ch > vh && cw < vw) {
+      // Kalau sumbu y yang overflow , sumbu x full width
+      setViewableIndicator({
+        ...viewableIndicator,
+        width: iw,
+        height: (vh / ch) * ih,
+        y: -e.state.positionY / 5,
+      });
+    }else if (ch < vh && cw > vh) {
+      // Kalau sumbu x yang overflow , sumbu y full width
+
+    }else if (ch > vh && cw > vw) {
+      // Kalau 2 2 nya overflow
+    }else{
+      setViewableIndicator({
+        width: 0,
+        height: 0,
+        x: 0,
+        y: 0,
+      });
+    }
+  };
+
   return (
-    <div className="w-full h-screen bg-red-400 relative">
-      <div className="fixed z-50">
-        <input
-          type="range"
-          min="0.1"
-          max="1.5"
-          step="0.01"
-          value={scale}
-          onChange={updateScale}
-        />
-        <button
-          className=" bg-indigo-600 mx-3"
-          onClick={toImage}
-        >Download
-        </button>
-        <button
-          className=" bg-indigo-600 mx-3"
-          onClick={center}
-        >Center
-        </button>
-        <button
-          className=" bg-indigo-600 mx-3"
-          onClick={resetScale}
-        >Reset
-        </button>
+    <div className="w-full h-screen bg-red-400 relative overflow-hidden">
+      {/* Brilliant */}
+      <div className="absolute bottom-0  w-full z-50 pointer-events-none">
+        <div className="bottom-bar h-10 w-full  relative flex justify-end px-60">
+          <div className="relative">
+            <button className="bg-pink-500 p-3">View</button>
+            <div
+              style={{
+                width: 1080 / 5,
+                height: 1920 / 5,
+                bottom: '150%',
+              }}
+              className="absolute bg-gray-900"
+            >
+              <Rnd
+                size={{
+                  width: viewableIndicator.width,
+                  height: viewableIndicator.height,
+                }}
+                position={{ x: viewableIndicator.x, y: viewableIndicator.y }}
+                onDragStop={onIndicatorDragStop}
+                enableResizing={false}
+                bounds="parent"
+              >
+                <div className="w-full h-full bg-green-900"></div>
+              </Rnd>
+            </div>
+          </div>
+        </div>
       </div>
+      <Top
+        scale={scale}
+        updateScale={updateScale}
+        toImage={toImage}
+        center={center}
+        resetScale={resetScale}
+      />
       <div
         ref={bigRef}
         className="w-full h-full justify-center items-center"
@@ -173,18 +277,24 @@ const App = () => {
             disabled: true,
           }}
           wheel={{
-            activationKeys: ['z'],
+            // activationKeys: ['z'],
           }}
           panning={{
-            activationKeys: ['x'],
-            disabled: disablePanning,
+            // activationKeys: ['x'],
+            disabled: true,
+            velocityDisabled: true,
+
           }}
-          limitToBounds={false}
           zoomAnimation={{ disabled: true }}
           centerOnInit
           onZoom={(e) => {
             setScale(e.state.scale);
           }}
+          alignmentAnimation={{
+            velocityAlignmentTime: 0,
+          }}
+          onInit={handleWrapperInit}
+          onZoom={handleZoomStop}
         >
           {({
             zoomIn, zoomOut, setTransform, ...rest
