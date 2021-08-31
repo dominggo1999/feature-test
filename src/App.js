@@ -375,7 +375,6 @@ const App = () => {
                 <FixedCanvas ref={ref}>
                   <Rnd
                     onClick={handleClick}
-                    bounds="parent"
                     scale={scale}
                     enableResizing={enableResizing}
                     disableDragging={dragging}
