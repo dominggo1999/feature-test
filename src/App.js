@@ -38,19 +38,9 @@ const App = () => {
   const [viewableIndicator, setViewableIndicator] = useState({
     x: 0,
     y: 0,
-    width: 100,
-    height: 100,
+    width: 0,
+    height: 0,
   });
-
-  const resetScale = (time) => {
-    const { setTransform } = transformComponentRef.current;
-
-    const x = (bigRef.current.clientWidth - 1080 * 0.3) / 2;
-    const y = (bigRef.current.clientHeight - 1920 * 0.3) / 2;
-
-    setTransform(x, y, 0.3, time);
-    setScale(0.3);
-  };
 
   const updateViewableDimension = () => {
     const view = bigRef.current;
@@ -60,20 +50,6 @@ const App = () => {
       height: view.clientHeight,
     });
   };
-
-  useEffect(() => {
-    const whenResize = (e) => {
-      resetScale();
-      updateViewableDimension();
-    };
-
-    updateViewableDimension();
-
-    window.addEventListener('resize', whenResize);
-    return () => {
-      window.removeEventListener('resize', whenResize);
-    };
-  }, []);
 
   const [option, setOption] = useState({
     x: 0, y: 0, width: 800, height: 'auto',
@@ -111,6 +87,40 @@ const App = () => {
       x: d.x,
       y: d.y,
     });
+  };
+
+  const onIndicatorDrag = (e, d) => {
+    const { setTransform, state } = transformComponentRef.current;
+
+    // Viewable Area
+    const { width, height } = viewableDimension;
+    const vw = width;
+    const vh = height;
+
+    // Canvas
+    const cw = 1080 * scale;
+    const ch = 1920 * scale;
+
+    // Ukuran Indicator
+    const iw = 1080 / 5;
+    const ih = 1920 / 5;
+
+    const skala = ch / ih;
+
+    const newX = skala * -d.x;
+    const newY = skala * -d.y;
+    setTransform(state.x, newY, scale, 0);
+
+    if(ch > vh && cw < vw) {
+      // Kalau sumbu y yang overflow , sumbu x full width
+      setTransform(state.x, newY, scale, 0);
+    }else if (ch < vh && cw > vh) {
+      // Kalau sumbu x yang overflow , sumbu y full width
+      setTransform(newX, state.y, scale, 0);
+    }else if (ch > vh && cw > vw) {
+      // Kalau 2 2 nya overflow
+      setTransform(newX, newY, scale, 0);
+    }
   };
 
   const handleDragStart = (e) => {
@@ -154,9 +164,79 @@ const App = () => {
 
   useClickOutside(textRef, toggleEditable);
 
+  const handleWrapperInit = () => {};
+
+  const mapCanvasToIndicator = (e) => {
+    const cw = 1080 * e.state.scale;
+    const ch = 1920 * e.state.scale;
+
+    const { width, height } = viewableDimension;
+    const vw = width;
+    const vh = height;
+
+    // Ukuran Indicator
+    const iw = 1080 / 5;
+    const ih = 1920 / 5;
+
+    // Perbandingan yang real dengan indikator
+    // skala  nya 1:scala
+    const skala = ch / ih;
+
+    if(ch > vh && cw < vw) {
+      // Kalau sumbu y yang overflow , sumbu x full width
+      setViewableIndicator({
+        ...viewableIndicator,
+        width: iw,
+        height: (vh / ch) * ih,
+        x: 0,
+        y: -e.state.positionY / skala,
+      });
+    }else if (ch < vh && cw > vh) {
+      // Kalau sumbu x yang overflow , sumbu y full width
+      setViewableIndicator({
+        ...viewableIndicator,
+        height: ih,
+        width: (vw / cw) * iw,
+        x: -e.state.positionX / skala,
+        y: 0,
+      });
+    }else if (ch > vh && cw > vw) {
+      // Kalau 2 2 nya overflow
+      setViewableIndicator({
+        ...viewableIndicator,
+        width: (vw / cw) * iw,
+        height: (vh / ch) * ih,
+        x: -e.state.positionX / skala,
+        y: -e.state.positionY / skala,
+      });
+    }else{
+      setViewableIndicator({
+        width: 0,
+        height: 0,
+        x: 0,
+        y: 0,
+      });
+    }
+  };
+
   const center = () => {
     const { centerView } = transformComponentRef.current;
     centerView();
+
+    const { contentComponent, wrapperComponent } = transformComponentRef.current.instance;
+    const contentWidth = contentComponent.offsetWidth * scale;
+    const contentHeight = contentComponent.offsetHeight * scale;
+
+    const centerPositionX = (wrapperComponent.offsetWidth - contentWidth) / 2;
+    const centerPositionY = (wrapperComponent.offsetHeight - contentHeight) / 2;
+
+    mapCanvasToIndicator({
+      state: {
+        positionX: centerPositionX,
+        positionY: centerPositionY,
+        scale,
+      },
+    });
   };
 
   const updateScale = (e) => {
@@ -169,64 +249,49 @@ const App = () => {
     }else{
       zoomOut(-ratio, 0);
     }
-
     setScale(scale * Math.exp(1 * ratio));
+    mapCanvasToIndicator(transformComponentRef.current);
   };
 
-  const handleWrapperInit = (e) => {
+  const resetScale = (time) => {
+    const { setTransform } = transformComponentRef.current;
+
+    const x = (bigRef.current.clientWidth - 1080 * 0.3) / 2;
+    const y = (bigRef.current.clientHeight - 1920 * 0.3) / 2;
+
+    setTransform(x, y, 0.3, time);
+    setScale(0.3);
+    mapCanvasToIndicator({
+      state: {
+        positionX: x,
+        positionY: y,
+        scale: 0.3,
+      },
+    });
   };
 
   const handleZoomStop = (e) => {
-    const a = transformComponentRef.current;
-    const cw = 1080 * e.state.scale;
-    const ch = 1920 * e.state.scale;
-
-    const { width, height } = viewableDimension;
-    const vw = width;
-    const vh = height;
-
-    const iw = 1080 / 5;
-    const ih = 1920 / 5;
-
-    const totalOverflowLength = ch - (-e.state.positionY) - vh;
-    const{
-      x, y, bottom, left,
-    } = a.instance.contentComponent.getBoundingClientRect();
-
-    // console.log(y, (-e.state.positionY), bottom - vh, ch - (-e.state.positionY) - vh);
-
-    const sisaAtas = -e.state.positionY;
-    const sisaBawah = ch - (-e.state.positionY) - vh;
-
-    console.log(sisaBawah);
-
-    if(ch > vh && cw < vw) {
-      // Kalau sumbu y yang overflow , sumbu x full width
-      setViewableIndicator({
-        ...viewableIndicator,
-        width: iw,
-        height: (vh / ch) * ih,
-        y: -e.state.positionY / 5,
-      });
-    }else if (ch < vh && cw > vh) {
-      // Kalau sumbu x yang overflow , sumbu y full width
-
-    }else if (ch > vh && cw > vw) {
-      // Kalau 2 2 nya overflow
-    }else{
-      setViewableIndicator({
-        width: 0,
-        height: 0,
-        x: 0,
-        y: 0,
-      });
-    }
+    mapCanvasToIndicator(e);
   };
+
+  useEffect(() => {
+    const whenResize = (e) => {
+      resetScale();
+      updateViewableDimension();
+    };
+
+    updateViewableDimension();
+
+    window.addEventListener('resize', whenResize);
+    return () => {
+      window.removeEventListener('resize', whenResize);
+    };
+  }, []);
 
   return (
     <div className="w-full h-screen bg-red-400 relative overflow-hidden">
       {/* Brilliant */}
-      <div className="absolute bottom-0  w-full z-50 pointer-events-none">
+      <div className="absolute bottom-0  w-full z-50">
         <div className="bottom-bar h-10 w-full  relative flex justify-end px-60">
           <div className="relative">
             <button className="bg-pink-500 p-3">View</button>
@@ -234,7 +299,7 @@ const App = () => {
               style={{
                 width: 1080 / 5,
                 height: 1920 / 5,
-                bottom: '150%',
+                bottom: '180%',
               }}
               className="absolute bg-gray-900"
             >
@@ -247,6 +312,7 @@ const App = () => {
                 onDragStop={onIndicatorDragStop}
                 enableResizing={false}
                 bounds="parent"
+                onDrag={onIndicatorDrag}
               >
                 <div className="w-full h-full bg-green-900"></div>
               </Rnd>
@@ -263,7 +329,7 @@ const App = () => {
       />
       <div
         ref={bigRef}
-        className="w-full h-full justify-center items-center"
+        className="w-full h-full flex justify-center items-center"
       >
         <TransformWrapper
           ref={transformComponentRef}
@@ -341,7 +407,7 @@ const App = () => {
                           fontSize: '80px',
                           overflowWrap: 'break-word',
                         }}
-                      >Lorem ipsum dolor sit amet consectetur
+                      >Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aspernatur nihil vero iure sit esse dolores, porro consectetur ipsam fugiat aperiam itaque modi perferendis quae animi illo autem facere amet! A ullam dignissimos, delectus consectetur minus ad magnam laboriosam omnis neque obcaecati po
                       </div>
                     </div>
                   </Rnd>
